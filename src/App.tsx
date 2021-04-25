@@ -22,16 +22,37 @@ const getProducts = async (): Promise<CartItemType[]> => {
 
 const App: React.FC = () => {
   const [cartIsOpen, setCartIsOpen] = useState(false);
-  const [cartItems, setCartItems] = useState<CartItemType[]>([]);
+  const [cartItems, setCartItems] = useState([] as CartItemType[]);
   const { isLoading, error, data } = useQuery<CartItemType[]>('products', getProducts);
 
   const getTotalItems = (items: CartItemType[]): number => 
     items.reduce((acc: number, item) => acc += item.amount, 0)
 
   const handleAddToCart = (clickedItem: CartItemType) => {
-    setCartItems(prevState => prevState.concat(clickedItem))
+    setCartItems(prevState => {
+      const itemInCart = prevState.find(item => item.id === clickedItem.id);
+
+      if (itemInCart) {
+        const index = prevState.indexOf(itemInCart);
+        return [...prevState.slice(0, index), {...itemInCart, amount: itemInCart.amount + 1}, ...prevState.slice(index+1)];
+      }
+
+      return [...prevState, {...clickedItem, amount: 1}]
+    })
   };
-  const handleRemoveFromCart = () => null;
+  
+  const handleRemoveFromCart = (id: number) => {
+    setCartItems(prevState => {
+      const itemInCart = prevState.find(item => item.id === id);
+      if (itemInCart) {
+        if (itemInCart.amount === 1)
+          return prevState.filter(item => item.id !== id);
+        const index = prevState.indexOf(itemInCart);
+        return [...prevState.slice(0, index), {...itemInCart, amount: itemInCart.amount - 1}, ...prevState.slice(index+1)];
+      }
+      return prevState;
+  })
+};
 
   if (isLoading) return <LinearProgress />
   
